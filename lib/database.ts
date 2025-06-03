@@ -114,7 +114,7 @@ export async function deleteReference(id: string): Promise<void> {
     console.warn("Supabase no disponible")
     throw new Error("Supabase is not available")
   }
-  const { error } = await supabase.from("references").delete().eq("id", id)
+  const { error } = await supabase.from("references_text").delete().eq("id", id)
 
   if (error) {
     console.error("Error deleting reference:", error)
