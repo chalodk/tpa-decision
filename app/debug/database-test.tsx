@@ -78,12 +78,12 @@ export default function DatabaseTest() {
 
         // Update password
         const updatedPassword = await updatePassword(createdPassword.id, {
-          salesEmail: "updated@example.com",
+          sales_email: "updated@example.com",
         })
         addResult(
           "Tabla passwords (UPDATE)",
           "success",
-          `Contraseña actualizada: ${updatedPassword.password} (Email: ${updatedPassword.salesEmail})`,
+          `Contraseña actualizada: ${updatedPassword.password} (Email: ${updatedPassword.sales_email})`,
         )
 
         // Delete password
