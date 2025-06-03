@@ -67,7 +67,7 @@ export default function DatabaseTest() {
         // Create password
         const newPassword = {
           password: `test-${Date.now()}`,
-          salesEmail: "test@example.com",
+          sales_email: "test@example.com",
         }
         const createdPassword = await createPassword(newPassword)
         addResult(
