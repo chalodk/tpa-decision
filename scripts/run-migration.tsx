@@ -6,9 +6,7 @@ import { supabase, isSupabaseAvailable } from "@/lib/supabase"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { CheckCircle, XCircle, AlertTriangle } from "lucide-react"
-
-// Import the migration SQL
-import migrationSQL from "@/supabase/migrations/001_initial_schema.sql"
+import { runAutoMigration } from "@/lib/auto-migration"
 
 export default function RunMigration() {
   const [status, setStatus] = useState<"idle" | "running" | "success" | "error">("idle")
@@ -58,36 +56,23 @@ export default function RunMigration() {
       addLog("✅ Conexión a Supabase exitosa")
 
       // Run migration
-      addLog("🔄 Ejecutando migración...")
+      addLog("🔄 Ejecutando migración automática...")
 
-      // Split the SQL into separate statements
-      const statements = migrationSQL
-        .replace(/--.*$/gm, "") // Remove comments
-        .split(";")
-        .filter((statement) => statement.trim().length > 0)
+      const migrationResult = await runAutoMigration()
 
-      addLog(`📊 Encontradas ${statements.length} sentencias SQL para ejecutar`)
-
-      // Execute each statement
-      for (let i = 0; i < statements.length; i++) {
-        const statement = statements[i]
-        addLog(`🔄 Ejecutando sentencia ${i + 1}/${statements.length}...`)
-
-        const { error } = await supabase.rpc("exec", { query: statement })
-
-        if (error) {
-          addLog(`❌ Error en sentencia ${i + 1}: ${error.message}`)
-          // Continue with next statement
-        } else {
-          addLog(`✅ Sentencia ${i + 1} ejecutada correctamente`)
-        }
+      if (migrationResult.success) {
+        addLog("✅ Migración completada exitosamente")
+        setStatus("success")
+        setMessage("Migración completada correctamente")
+      } else {
+        throw new Error(`Error en migración: ${migrationResult.message}`)
       }
 
       // Verify tables were created
       addLog("🔄 Verificando tablas creadas...")
       const tables = [
         "passwords",
-        "references",
+        "references_text",
         "video_demos",
         "testimonials",
         "testimonial_stats",
@@ -104,9 +89,6 @@ export default function RunMigration() {
           addLog(`✅ Tabla ${table} creada correctamente`)
         }
       }
-
-      setStatus("success")
-      setMessage("Migración completada correctamente")
     } catch (error) {
       setStatus("error")
       setMessage(error instanceof Error ? error.message : "Error desconocido")
