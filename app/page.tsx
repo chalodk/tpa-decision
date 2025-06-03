@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { LockIcon, AlertCircleIcon, SettingsIcon } from "lucide-react"
+import { LockIcon, AlertCircleIcon } from "lucide-react"
 import dynamic from "next/dynamic"
 import { getPasswords, initializeDatabase } from "@/lib/database"
 
@@ -191,16 +191,7 @@ function LoginForm({ onLogin }: { onLogin: (password: string) => void }) {
                 {dbStatus === "fallback" && (
                   <div className="flex items-center gap-2 text-orange-600 bg-orange-50">
                     <AlertCircleIcon className="w-4 h-4" />
-                    <span>⚠️ Modo local - Migración requerida</span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => window.open("/migration", "_blank")}
-                      className="ml-2 text-xs"
-                    >
-                      <SettingsIcon className="h-3 w-3 mr-1" />
-                      Ejecutar Migración
-                    </Button>
+                    <span>⚠️ Modo local (sin base de datos)</span>
                   </div>
                 )}
               </div>
