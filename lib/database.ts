@@ -86,7 +86,7 @@ export async function createReference(reference: Omit<Reference, "id" | "created
     console.warn("Supabase no disponible")
     throw new Error("Supabase is not available")
   }
-  const { data, error } = await supabase.from("references").insert([reference]).select().single()
+  const { data, error } = await supabase.from("references_text").insert([reference]).select().single()
 
   if (error) {
     console.error("Error creating reference:", error)
