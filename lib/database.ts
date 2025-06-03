@@ -1,4 +1,5 @@
 import { supabase, isSupabaseAvailable } from "./supabase"
+import { runAutoMigration } from "./auto-migration"
 import type { Password, Reference, VideoDemo, Testimonial, TestimonialStats, Session } from "./supabase"
 
 // Funciones para Passwords
@@ -362,7 +363,7 @@ export async function updateCustomizationContent(content: any): Promise<any> {
   return data
 }
 
-// Función de inicialización para verificar conexión
+// Función de inicialización para verificar conexión y ejecutar migración automática
 export async function initializeDatabase(): Promise<boolean> {
   try {
     if (!isSupabaseAvailable()) {
@@ -376,8 +377,18 @@ export async function initializeDatabase(): Promise<boolean> {
     if (error) {
       // Check if the error is because the table doesn't exist
       if (error.code === "42P01" || error.message.includes("does not exist")) {
-        console.warn("⚠️ Las tablas de la base de datos no existen. Ejecuta la migración primero.")
-        return false
+        console.warn("⚠️ Las tablas no existen. Ejecutando migración automática...")
+
+        // Run auto migration
+        const migrationResult = await runAutoMigration()
+
+        if (migrationResult.success) {
+          console.log("✅ Migración automática completada exitosamente")
+          return true
+        } else {
+          console.error("❌ Error en migración automática:", migrationResult.message)
+          return false
+        }
       }
       throw error
     }
