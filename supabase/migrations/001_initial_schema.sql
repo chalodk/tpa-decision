@@ -9,8 +9,8 @@ CREATE TABLE IF NOT EXISTS passwords (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create references table
-CREATE TABLE IF NOT EXISTS references (
+-- Create references_text table
+CREATE TABLE IF NOT EXISTS references_text (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
   position TEXT NOT NULL,
@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS customization_content (
 
 -- Clear existing data (in case of re-run)
 DELETE FROM passwords;
-DELETE FROM references;
+DELETE FROM references_text;
 DELETE FROM video_demos;
 DELETE FROM testimonials;
 DELETE FROM testimonial_stats;
@@ -87,8 +87,8 @@ INSERT INTO passwords (password, sales_email) VALUES
   ('tpa-client', 'asesor@thepromptacademy.com'),
   ('academy123', 'comercial@thepromptacademy.com');
 
--- Insert default references
-INSERT INTO references (name, position, company, email, whatsapp) VALUES
+-- Insert default references_text
+INSERT INTO references_text (name, position, company, email, whatsapp) VALUES
   ('María González', 'Directora de Innovación', 'Banco Santander Chile', 'maria.gonzalez@santander.cl', '+56912345678'),
   ('Carlos Rodríguez', 'Gerente de Transformación Digital', 'Falabella', 'carlos.rodriguez@falabella.com', '+56987654321'),
   ('Ana Martínez', 'Head of Operations', 'Latam Airlines', 'ana.martinez@latam.com', '+56911223344'),
@@ -151,7 +151,7 @@ CREATE INDEX IF NOT EXISTS idx_passwords_password ON passwords(password);
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE passwords ENABLE ROW LEVEL SECURITY;
-ALTER TABLE references ENABLE ROW LEVEL SECURITY;
+ALTER TABLE references_text ENABLE ROW LEVEL SECURITY;
 ALTER TABLE video_demos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE testimonials ENABLE ROW LEVEL SECURITY;
 ALTER TABLE testimonial_stats ENABLE ROW LEVEL SECURITY;
@@ -160,7 +160,7 @@ ALTER TABLE customization_content ENABLE ROW LEVEL SECURITY;
 
 -- Create policies (allow all operations for now, you can restrict later)
 CREATE POLICY "Allow all operations on passwords" ON passwords FOR ALL USING (true);
-CREATE POLICY "Allow all operations on references" ON references FOR ALL USING (true);
+CREATE POLICY "Allow all operations on references_text" ON references_text FOR ALL USING (true);
 CREATE POLICY "Allow all operations on video_demos" ON video_demos FOR ALL USING (true);
 CREATE POLICY "Allow all operations on testimonials" ON testimonials FOR ALL USING (true);
 CREATE POLICY "Allow all operations on testimonial_stats" ON testimonial_stats FOR ALL USING (true);

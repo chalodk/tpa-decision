@@ -72,7 +72,7 @@ export async function getReferences(): Promise<Reference[]> {
     console.warn("Supabase no disponible")
     return []
   }
-  const { data, error } = await supabase.from("references").select("*").order("created_at", { ascending: false })
+  const { data, error } = await supabase.from("references_text").select("*").order("created_at", { ascending: false })
 
   if (error) {
     console.error("Error fetching references:", error)
@@ -86,7 +86,7 @@ export async function createReference(reference: Omit<Reference, "id" | "created
     console.warn("Supabase no disponible")
     throw new Error("Supabase is not available")
   }
-  const { data, error } = await supabase.from("references").insert([reference]).select().single()
+  const { data, error } = await supabase.from("references_text").insert([reference]).select().single()
 
   if (error) {
     console.error("Error creating reference:", error)
@@ -100,7 +100,7 @@ export async function updateReference(id: string, updates: Partial<Reference>): 
     console.warn("Supabase no disponible")
     throw new Error("Supabase is not available")
   }
-  const { data, error } = await supabase.from("references").update(updates).eq("id", id).select().single()
+  const { data, error } = await supabase.from("references_text").update(updates).eq("id", id).select().single()
 
   if (error) {
     console.error("Error updating reference:", error)
@@ -114,7 +114,7 @@ export async function deleteReference(id: string): Promise<void> {
     console.warn("Supabase no disponible")
     throw new Error("Supabase is not available")
   }
-  const { error } = await supabase.from("references").delete().eq("id", id)
+  const { error } = await supabase.from("references_text").delete().eq("id", id)
 
   if (error) {
     console.error("Error deleting reference:", error)

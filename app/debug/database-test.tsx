@@ -98,7 +98,7 @@ export default function DatabaseTest() {
         // Get references
         const references = await getReferences()
         addResult(
-          "Tabla references (GET)",
+          "Tabla references_text (GET)",
           "success",
           `Obtenidas ${references.length} referencias: ${references.map((r) => r.name).join(", ")}`,
         )
@@ -113,12 +113,12 @@ export default function DatabaseTest() {
         }
         const createdReference = await createReference(newReference)
         addResult(
-          "Tabla references (INSERT)",
+          "Tabla references_text (INSERT)",
           "success",
           `Referencia creada: ${createdReference.name} (ID: ${createdReference.id})`,
         )
       } catch (error) {
-        addResult("Tabla references", "error", `Error en operaciones CRUD: ${error.message}`)
+        addResult("Tabla references_text", "error", `Error en operaciones CRUD: ${error.message}`)
       }
 
       // Test video_demos table

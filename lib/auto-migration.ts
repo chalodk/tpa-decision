@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS passwords (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create references table
-CREATE TABLE IF NOT EXISTS references (
+-- Create references_text table
+CREATE TABLE IF NOT EXISTS references_text (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
   position TEXT NOT NULL,
@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS customization_content (
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE passwords ENABLE ROW LEVEL SECURITY;
-ALTER TABLE references ENABLE ROW LEVEL SECURITY;
+ALTER TABLE references_text ENABLE ROW LEVEL SECURITY;
 ALTER TABLE video_demos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE testimonials ENABLE ROW LEVEL SECURITY;
 ALTER TABLE testimonial_stats ENABLE ROW LEVEL SECURITY;
@@ -92,8 +92,8 @@ BEGIN
     CREATE POLICY "Allow all operations on passwords" ON passwords FOR ALL USING (true);
   END IF;
   
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow all operations on references') THEN
-    CREATE POLICY "Allow all operations on references" ON references FOR ALL USING (true);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow all operations on references_text') THEN
+    CREATE POLICY "Allow all operations on references_text" ON references_text FOR ALL USING (true);
   END IF;
   
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow all operations on video_demos') THEN
@@ -137,14 +137,14 @@ INSERT INTO passwords (password, sales_email)
 SELECT 'academy123', 'comercial@thepromptacademy.com'
 WHERE NOT EXISTS (SELECT 1 FROM passwords WHERE password = 'academy123');
 
--- Insert default references (only if table is empty)
-INSERT INTO references (name, position, company, email, whatsapp) 
+-- Insert default references_text (only if table is empty)
+INSERT INTO references_text (name, position, company, email, whatsapp) 
 SELECT 'María González', 'Directora de Innovación', 'Banco Santander Chile', 'maria.gonzalez@santander.cl', '+56912345678'
-WHERE NOT EXISTS (SELECT 1 FROM references LIMIT 1);
+WHERE NOT EXISTS (SELECT 1 FROM references_text LIMIT 1);
 
-INSERT INTO references (name, position, company, email, whatsapp) 
+INSERT INTO references_text (name, position, company, email, whatsapp) 
 SELECT 'Carlos Rodríguez', 'Gerente de Transformación Digital', 'Falabella', 'carlos.rodriguez@falabella.com', '+56987654321'
-WHERE NOT EXISTS (SELECT 1 FROM references WHERE name = 'Carlos Rodríguez');
+WHERE NOT EXISTS (SELECT 1 FROM references_text WHERE name = 'Carlos Rodríguez');
 
 -- Insert default video demos (only if table is empty)
 INSERT INTO video_demos (title, youtube_url, description) 
