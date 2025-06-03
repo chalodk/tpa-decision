@@ -188,7 +188,7 @@ export default function DatabaseTest() {
         if (stats) {
           const updatedStats = await updateTestimonialStats({
             totalProfessionals: stats.totalProfessionals + 1,
-            satisfactionRate: stats.satisfactionRate,
+            satisfaction_rate: stats.satisfaction_rate,
             productivity_increase: stats.productivity_increase,
             intro_text: stats.intro_text,
           })
@@ -200,7 +200,7 @@ export default function DatabaseTest() {
         } else {
           const newStats = await updateTestimonialStats({
             totalProfessionals: 501,
-            satisfactionRate: 95,
+            satisfaction_rate: 95,
             productivity_increase: 40,
             intro_text:
               "Más de 500 personas han pasado por nuestros cursos. Aquí puedes leer lo que dicen quienes ya transformaron su forma de trabajar gracias a la IA generativa.",
@@ -226,7 +226,7 @@ export default function DatabaseTest() {
           password: "test-session",
           startTime: new Date().toISOString(),
           sectionsVisited: ["home", "testimonials"],
-          isActive: true,
+          is_active: true,
         }
         const createdSession = await createSession(newSession)
         addResult("Tabla sessions (INSERT)", "success", `Sesión creada: ID ${createdSession.id}`)
