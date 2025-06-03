@@ -190,7 +190,7 @@ export default function DatabaseTest() {
             totalProfessionals: stats.totalProfessionals + 1,
             satisfactionRate: stats.satisfactionRate,
             productivityIncrease: stats.productivityIncrease,
-            introText: stats.introText,
+            intro_text: stats.intro_text,
           })
           addResult(
             "Tabla testimonial_stats (UPDATE)",
@@ -202,7 +202,7 @@ export default function DatabaseTest() {
             totalProfessionals: 501,
             satisfactionRate: 95,
             productivityIncrease: 40,
-            introText:
+            intro_text:
               "Más de 500 personas han pasado por nuestros cursos. Aquí puedes leer lo que dicen quienes ya transformaron su forma de trabajar gracias a la IA generativa.",
           })
           addResult(
@@ -246,7 +246,7 @@ export default function DatabaseTest() {
 
         // Update customization content
         const defaultContent = {
-          introText: "Texto actualizado de prueba",
+          intro_text: "Texto actualizado de prueba",
           coreModules: [{ id: "test", name: "Test Module", description: "Test Description" }],
           customizableModules: [],
           additionalOptions: [],
@@ -256,7 +256,7 @@ export default function DatabaseTest() {
         addResult(
           "Tabla customization_content (UPDATE)",
           "success",
-          `Contenido actualizado: ${updatedContent.introText}`,
+          `Contenido actualizado: ${updatedContent.intro_text}`,
         )
       } catch (error) {
         addResult("Tabla customization_content", "error", `Error en operaciones CRUD: ${error.message}`)
