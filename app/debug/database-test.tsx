@@ -181,13 +181,13 @@ export default function DatabaseTest() {
         addResult(
           "Tabla testimonial_stats (GET)",
           "success",
-          `Estadísticas obtenidas: ${stats ? `${stats.totalProfessionals} profesionales` : "No hay estadísticas"}`,
+          `Estadísticas obtenidas: ${stats ? `${stats.total_professionals} profesionales` : "No hay estadísticas"}`,
         )
 
         // Update testimonial stats
         if (stats) {
           const updatedStats = await updateTestimonialStats({
-            totalProfessionals: stats.totalProfessionals + 1,
+            total_professionals: stats.total_professionals + 1,
             satisfaction_rate: stats.satisfaction_rate,
             productivity_increase: stats.productivity_increase,
             intro_text: stats.intro_text,
@@ -195,11 +195,11 @@ export default function DatabaseTest() {
           addResult(
             "Tabla testimonial_stats (UPDATE)",
             "success",
-            `Estadísticas actualizadas: ${updatedStats.totalProfessionals} profesionales`,
+            `Estadísticas actualizadas: ${updatedStats.total_professionals} profesionales`,
           )
         } else {
           const newStats = await updateTestimonialStats({
-            totalProfessionals: 501,
+            total_professionals: 501,
             satisfaction_rate: 95,
             productivity_increase: 40,
             intro_text:
@@ -208,7 +208,7 @@ export default function DatabaseTest() {
           addResult(
             "Tabla testimonial_stats (INSERT)",
             "success",
-            `Estadísticas creadas: ${newStats.totalProfessionals} profesionales`,
+            `Estadísticas creadas: ${newStats.total_professionals} profesionales`,
           )
         }
       } catch (error) {
@@ -225,7 +225,7 @@ export default function DatabaseTest() {
         const newSession = {
           password: "test-session",
           startTime: new Date().toISOString(),
-          sectionsVisited: ["home", "testimonials"],
+          sections_visited: ["home", "testimonials"],
           is_active: true,
         }
         const createdSession = await createSession(newSession)
