@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { LockIcon, AlertCircleIcon } from "lucide-react"
+import { LockIcon, AlertCircleIcon, SettingsIcon } from "lucide-react"
 import dynamic from "next/dynamic"
 import { getPasswords, initializeDatabase } from "@/lib/database"
 
@@ -35,7 +35,21 @@ function LoginForm({ onLogin }: { onLogin: (password: string) => void }) {
       try {
         console.log("🔄 Verificando conexión a Supabase...")
 
-        // Verificar conexión primero
+        // Verificar si las variables de entorno están configuradas
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+        console.log("Variables de entorno:", {
+          url: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : "❌ No configurado",
+          key: supabaseKey ? `${supabaseKey.substring(0, 30)}...` : "❌ No configurado",
+        })
+
+        if (!supabaseUrl || !supabaseKey) {
+          console.warn("⚠️ Variables de entorno de Supabase no configuradas")
+          throw new Error("Variables de Supabase no configuradas")
+        }
+
+        // Verificar conexión
         const isConnected = await initializeDatabase()
 
         if (isConnected) {
@@ -44,10 +58,10 @@ function LoginForm({ onLogin }: { onLogin: (password: string) => void }) {
           setDbStatus("connected")
           console.log("✅ Conectado a Supabase - Contraseñas cargadas:", passwords.length)
         } else {
-          throw new Error("No se pudo conectar a Supabase")
+          throw new Error("No se pudo conectar a Supabase o las tablas no existen")
         }
       } catch (error) {
-        console.warn("⚠️ Supabase no disponible, usando modo fallback:", error)
+        console.warn("⚠️ Supabase no disponible o tablas no existen, usando modo fallback:", error)
 
         // Fallback a contraseñas por defecto
         const fallbackPasswords = ["demo2025", "tpa-client", "academy123"]
@@ -177,7 +191,16 @@ function LoginForm({ onLogin }: { onLogin: (password: string) => void }) {
                 {dbStatus === "fallback" && (
                   <div className="flex items-center gap-2 text-orange-600 bg-orange-50">
                     <AlertCircleIcon className="w-4 h-4" />
-                    <span>⚠️ Modo local (sin base de datos)</span>
+                    <span>⚠️ Modo local - Migración requerida</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => window.open("/migration", "_blank")}
+                      className="ml-2 text-xs"
+                    >
+                      <SettingsIcon className="h-3 w-3 mr-1" />
+                      Ejecutar Migración
+                    </Button>
                   </div>
                 )}
               </div>

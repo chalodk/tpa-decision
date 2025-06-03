@@ -370,8 +370,18 @@ export async function initializeDatabase(): Promise<boolean> {
       return false
     }
 
+    // Try to query the passwords table to check if it exists
     const { data, error } = await supabase.from("passwords").select("count").single()
-    if (error) throw error
+
+    if (error) {
+      // Check if the error is because the table doesn't exist
+      if (error.code === "42P01" || error.message.includes("does not exist")) {
+        console.warn("⚠️ Las tablas de la base de datos no existen. Ejecuta la migración primero.")
+        return false
+      }
+      throw error
+    }
+
     console.log("✅ Conexión a Supabase exitosa")
     return true
   } catch (error) {
