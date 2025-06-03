@@ -5,6 +5,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   LockIcon,
@@ -17,6 +18,7 @@ import {
   MessageSquareIcon,
   SettingsIcon,
   AlertCircleIcon,
+  EyeIcon,
 } from "lucide-react"
 import {
   Dialog,
@@ -933,6 +935,7 @@ function AdminContent() {
           </div>
         )}
 
+        {/* Passwords Tab */}
         {activeTab === "passwords" && (
           <>
             <div className="flex justify-between items-center mb-8">
@@ -1045,8 +1048,880 @@ function AdminContent() {
           </>
         )}
 
-        {/* Continue with other tabs... */}
-        {/* I'll continue with the rest of the tabs in the next part */}
+        {/* Tracking Tab */}
+        {activeTab === "tracking" && (
+          <>
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-slate-800">Tracking de Sesiones</h1>
+              <p className="text-gray-600 mt-2">Monitorea el uso y actividad de cada contraseña</p>
+            </div>
+
+            {/* Sessions Overview */}
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="text-2xl font-bold text-slate-800">{sessions.length}</div>
+                  <div className="text-gray-600">Total de Sesiones</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="text-2xl font-bold text-slate-800">{sessions.filter((s) => s.is_active).length}</div>
+                  <div className="text-gray-600">Sesiones Activas</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="text-2xl font-bold text-slate-800">{passwords.length}</div>
+                  <div className="text-gray-600">Contraseñas Monitoreadas</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Password Analytics */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Análisis por Contraseña</CardTitle>
+                <CardDescription>Estadísticas de uso para cada contraseña</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {passwords.map((password) => {
+                    const stats = getPasswordStats(password.password)
+                    return (
+                      <div key={password.id} className="p-4 border rounded-lg">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <div className="font-mono text-lg font-semibold text-slate-800">
+                              {maskPassword(password.password)}
+                            </div>
+                            <div className="text-sm text-gray-600">Asesor: {password.sales_email}</div>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => viewPasswordSessions(password.password)}
+                            disabled={loading}
+                          >
+                            <EyeIcon className="h-4 w-4 mr-2" />
+                            Ver Sesiones
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <div className="font-medium text-gray-700">Total Sesiones</div>
+                            <div className="text-slate-800">{stats.totalSessions}</div>
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-700">Último Acceso</div>
+                            <div className="text-slate-800">
+                              {stats.lastAccess ? new Date(stats.lastAccess).toLocaleDateString("es-ES") : "Nunca"}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-700">Duración Promedio</div>
+                            <div className="text-slate-800">{stats.avgDuration} min</div>
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-700">Sección Más Visitada</div>
+                            <div className="text-slate-800">{stats.mostVisitedSection}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {passwords.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">No hay contraseñas para monitorear</div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Sessions Detail Dialog */}
+            <Dialog open={isSessionsDialogOpen} onOpenChange={setIsSessionsDialogOpen}>
+              <DialogContent className="max-w-4xl">
+                <DialogHeader>
+                  <DialogTitle>Sesiones para contraseña: {maskPassword(selectedPasswordForSessions)}</DialogTitle>
+                  <DialogDescription>Detalle de todas las sesiones registradas</DialogDescription>
+                </DialogHeader>
+                <div className="max-h-96 overflow-y-auto">
+                  <div className="space-y-3">
+                    {selectedPasswordSessions.map((session) => (
+                      <div key={session.id} className="p-3 border rounded-lg">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="text-sm font-medium text-slate-800">Sesión {session.id.slice(-8)}</div>
+                          <div
+                            className={`px-2 py-1 rounded text-xs ${
+                              session.is_active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {session.is_active ? "Activa" : "Finalizada"}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <div className="text-gray-600">Inicio:</div>
+                            <div>{new Date(session.start_time).toLocaleString("es-ES")}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-600">Duración:</div>
+                            <div>{session.duration ? `${session.duration} min` : "En curso"}</div>
+                          </div>
+                        </div>
+                        <div className="mt-2">
+                          <div className="text-gray-600 text-sm">Secciones visitadas:</div>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {session.sections_visited.map((section, index) => (
+                              <span key={index} className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">
+                                {section}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {selectedPasswordSessions.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">No hay sesiones registradas</div>
+                    )}
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </>
+        )}
+
+        {/* References Tab */}
+        {activeTab === "referencias" && (
+          <>
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h1 className="text-3xl font-bold text-slate-800">Gestión de Referencias</h1>
+                <p className="text-gray-600 mt-2">Administra los contactos de referencia institucional</p>
+              </div>
+              <Dialog open={isReferenceDialogOpen} onOpenChange={setIsReferenceDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={openAddReferenceDialog}
+                    className="bg-orange-600 hover:bg-orange-700"
+                    disabled={loading}
+                  >
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Agregar Referencia
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{editingReference ? "Editar Referencia" : "Agregar Nueva Referencia"}</DialogTitle>
+                    <DialogDescription>
+                      {editingReference
+                        ? "Modifica la referencia existente"
+                        : "Crea una nueva referencia institucional"}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Nombre Completo</label>
+                        <Input
+                          placeholder="María González"
+                          value={newReference.name}
+                          onChange={(e) => setNewReference({ ...newReference, name: e.target.value })}
+                          disabled={loading}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Cargo</label>
+                        <Input
+                          placeholder="Directora de Innovación"
+                          value={newReference.position}
+                          onChange={(e) => setNewReference({ ...newReference, position: e.target.value })}
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Empresa</label>
+                      <Input
+                        placeholder="Banco Santander Chile"
+                        value={newReference.company}
+                        onChange={(e) => setNewReference({ ...newReference, company: e.target.value })}
+                        disabled={loading}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Email</label>
+                        <Input
+                          type="email"
+                          placeholder="maria.gonzalez@empresa.com"
+                          value={newReference.email}
+                          onChange={(e) => setNewReference({ ...newReference, email: e.target.value })}
+                          disabled={loading}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">WhatsApp</label>
+                        <Input
+                          placeholder="+56912345678"
+                          value={newReference.whatsapp}
+                          onChange={(e) => setNewReference({ ...newReference, whatsapp: e.target.value })}
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
+                    {error && <p className="text-red-600 text-sm">{error}</p>}
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={editingReference ? handleEditReference : handleAddReference}
+                        className="bg-orange-600 hover:bg-orange-700"
+                        disabled={loading}
+                      >
+                        {loading ? "Guardando..." : editingReference ? "Actualizar" : "Agregar"}
+                      </Button>
+                      <Button variant="outline" onClick={() => setIsReferenceDialogOpen(false)} disabled={loading}>
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {/* References List */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Referencias Activas ({references.length})</CardTitle>
+                <CardDescription>Lista de contactos de referencia disponibles para los usuarios</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {references.map((reference) => (
+                    <div key={reference.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex-1">
+                        <div className="font-semibold text-slate-800">{reference.name}</div>
+                        <div className="text-sm text-gray-600">{reference.position}</div>
+                        <div className="text-sm text-gray-600">{reference.company}</div>
+                        <div className="text-sm text-gray-500 mt-1">
+                          {reference.email} • {reference.whatsapp}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditReferenceDialog(reference)}
+                          disabled={loading}
+                        >
+                          <EditIcon className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteReference(reference.id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          disabled={loading}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {references.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">No hay referencias configuradas</div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {/* Videos Tab */}
+        {activeTab === "videos" && (
+          <>
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h1 className="text-3xl font-bold text-slate-800">Gestión de Videos Demo</h1>
+                <p className="text-gray-600 mt-2">Administra los videos demostrativos del curso</p>
+              </div>
+              <Dialog open={isVideoDemoDialogOpen} onOpenChange={setIsVideoDemoDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={openAddVideoDemoDialog}
+                    className="bg-orange-600 hover:bg-orange-700"
+                    disabled={loading}
+                  >
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Agregar Video
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{editingVideoDemo ? "Editar Video Demo" : "Agregar Nuevo Video Demo"}</DialogTitle>
+                    <DialogDescription>
+                      {editingVideoDemo ? "Modifica el video existente" : "Agrega un nuevo video demostrativo"}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Título del Video</label>
+                      <Input
+                        placeholder="Fundamentos de IA Generativa"
+                        value={newVideoDemo.title}
+                        onChange={(e) => setNewVideoDemo({ ...newVideoDemo, title: e.target.value })}
+                        disabled={loading}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">URL de YouTube</label>
+                      <Input
+                        placeholder="https://www.youtube.com/watch?v=..."
+                        value={newVideoDemo.youtube_url}
+                        onChange={(e) => setNewVideoDemo({ ...newVideoDemo, youtube_url: e.target.value })}
+                        disabled={loading}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Descripción (Opcional)</label>
+                      <Textarea
+                        placeholder="Descripción del contenido del video..."
+                        value={newVideoDemo.description}
+                        onChange={(e) => setNewVideoDemo({ ...newVideoDemo, description: e.target.value })}
+                        disabled={loading}
+                        rows={3}
+                      />
+                    </div>
+                    {error && <p className="text-red-600 text-sm">{error}</p>}
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={editingVideoDemo ? handleEditVideoDemo : handleAddVideoDemo}
+                        className="bg-orange-600 hover:bg-orange-700"
+                        disabled={loading}
+                      >
+                        {loading ? "Guardando..." : editingVideoDemo ? "Actualizar" : "Agregar"}
+                      </Button>
+                      <Button variant="outline" onClick={() => setIsVideoDemoDialogOpen(false)} disabled={loading}>
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {/* Videos List */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Videos Demo Activos ({videoDemos.length})</CardTitle>
+                <CardDescription>Lista de videos demostrativos disponibles para los usuarios</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {videoDemos.map((video) => {
+                    const videoId = extractVideoId(video.youtube_url)
+                    return (
+                      <div key={video.id} className="flex items-start gap-4 p-4 border rounded-lg">
+                        <div className="w-32 h-20 bg-gray-200 rounded overflow-hidden flex-shrink-0">
+                          {videoId ? (
+                            <img
+                              src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
+                              alt={video.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">
+                              Sin preview
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-semibold text-slate-800">{video.title}</div>
+                          <div className="text-sm text-gray-600 mt-1">{video.description}</div>
+                          <div className="text-sm text-gray-500 mt-2">
+                            URL:{" "}
+                            {video.youtube_url.length > 50 ? `${video.youtube_url.slice(0, 50)}...` : video.youtube_url}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditVideoDemoDialog(video)}
+                            disabled={loading}
+                          >
+                            <EditIcon className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteVideoDemo(video.id)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            disabled={loading}
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {videoDemos.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">No hay videos demo configurados</div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {/* Testimonials Tab */}
+        {activeTab === "testimonios" && (
+          <>
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h1 className="text-3xl font-bold text-slate-800">Gestión de Testimonios</h1>
+                <p className="text-gray-600 mt-2">Administra testimonios de estudiantes y estadísticas</p>
+              </div>
+              <Dialog open={isTestimonialDialogOpen} onOpenChange={setIsTestimonialDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={openAddTestimonialDialog}
+                    className="bg-orange-600 hover:bg-orange-700"
+                    disabled={loading}
+                  >
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Agregar Testimonio
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>{editingTestimonial ? "Editar Testimonio" : "Agregar Nuevo Testimonio"}</DialogTitle>
+                    <DialogDescription>
+                      {editingTestimonial
+                        ? "Modifica el testimonio existente"
+                        : "Agrega un nuevo testimonio de estudiante"}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Texto del Testimonio *</label>
+                      <Textarea
+                        placeholder="El curso transformó completamente nuestra forma de trabajar..."
+                        value={newTestimonial.text}
+                        onChange={(e) => setNewTestimonial({ ...newTestimonial, text: e.target.value })}
+                        disabled={loading}
+                        rows={4}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Nombre (Opcional)</label>
+                        <Input
+                          placeholder="Roberto Silva"
+                          value={newTestimonial.name}
+                          onChange={(e) => setNewTestimonial({ ...newTestimonial, name: e.target.value })}
+                          disabled={loading}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Cargo (Opcional)</label>
+                        <Input
+                          placeholder="Gerente de Operaciones"
+                          value={newTestimonial.position}
+                          onChange={(e) => setNewTestimonial({ ...newTestimonial, position: e.target.value })}
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Empresa (Opcional)</label>
+                      <Input
+                        placeholder="Empresa Retail Líder"
+                        value={newTestimonial.company}
+                        onChange={(e) => setNewTestimonial({ ...newTestimonial, company: e.target.value })}
+                        disabled={loading}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">URL de LinkedIn (Opcional)</label>
+                      <Input
+                        placeholder="https://linkedin.com/in/roberto-silva"
+                        value={newTestimonial.linkedin_url}
+                        onChange={(e) => setNewTestimonial({ ...newTestimonial, linkedin_url: e.target.value })}
+                        disabled={loading}
+                      />
+                    </div>
+                    {error && <p className="text-red-600 text-sm">{error}</p>}
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={editingTestimonial ? handleEditTestimonial : handleAddTestimonial}
+                        className="bg-orange-600 hover:bg-orange-700"
+                        disabled={loading}
+                      >
+                        {loading ? "Guardando..." : editingTestimonial ? "Actualizar" : "Agregar"}
+                      </Button>
+                      <Button variant="outline" onClick={() => setIsTestimonialDialogOpen(false)} disabled={loading}>
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {/* Testimonial Stats */}
+            {testimonialStats && (
+              <Card className="mb-8">
+                <CardHeader>
+                  <CardTitle>Estadísticas de Testimonios</CardTitle>
+                  <CardDescription>Métricas que se muestran en la sección pública</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-3 gap-6 mb-6">
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-orange-600">{testimonialStats.total_professionals}</div>
+                      <div className="text-gray-600">Profesionales Capacitados</div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => {
+                          const newValue = prompt(
+                            "Nuevo número de profesionales:",
+                            testimonialStats.total_professionals.toString(),
+                          )
+                          if (newValue && !isNaN(Number(newValue))) {
+                            handleUpdateTestimonialStats({ total_professionals: Number(newValue) })
+                          }
+                        }}
+                      >
+                        Editar
+                      </Button>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-green-600">{testimonialStats.satisfaction_rate}%</div>
+                      <div className="text-gray-600">Satisfacción Promedio</div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => {
+                          const newValue = prompt(
+                            "Nueva tasa de satisfacción (%):",
+                            testimonialStats.satisfaction_rate.toString(),
+                          )
+                          if (newValue && !isNaN(Number(newValue))) {
+                            handleUpdateTestimonialStats({ satisfaction_rate: Number(newValue) })
+                          }
+                        }}
+                      >
+                        Editar
+                      </Button>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-blue-600">{testimonialStats.productivity_increase}%</div>
+                      <div className="text-gray-600">Aumento Productividad</div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => {
+                          const newValue = prompt(
+                            "Nuevo aumento de productividad (%):",
+                            testimonialStats.productivity_increase.toString(),
+                          )
+                          if (newValue && !isNaN(Number(newValue))) {
+                            handleUpdateTestimonialStats({ productivity_increase: Number(newValue) })
+                          }
+                        }}
+                      >
+                        Editar
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Texto Introductorio</label>
+                    <Textarea
+                      value={testimonialStats.intro_text}
+                      onChange={(e) => handleUpdateTestimonialStats({ intro_text: e.target.value })}
+                      rows={3}
+                      placeholder="Texto que aparece en la sección de testimonios..."
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Testimonials List */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Testimonios Activos ({testimonials.length})</CardTitle>
+                <CardDescription>Lista de testimonios disponibles para los usuarios</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {testimonials.map((testimonial) => (
+                    <div key={testimonial.id} className="p-4 border rounded-lg">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1">
+                          <div className="font-semibold text-slate-800">{testimonial.name || "Testimonio Anónimo"}</div>
+                          {testimonial.position && (
+                            <div className="text-sm text-orange-600">{testimonial.position}</div>
+                          )}
+                          {testimonial.company && <div className="text-sm text-gray-600">{testimonial.company}</div>}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditTestimonialDialog(testimonial)}
+                            disabled={loading}
+                          >
+                            <EditIcon className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteTestimonial(testimonial.id)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            disabled={loading}
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="text-gray-700 italic mb-2">"{testimonial.text}"</div>
+                      {testimonial.linkedin_url && (
+                        <div className="text-sm text-blue-600">
+                          <a href={testimonial.linkedin_url} target="_blank" rel="noopener noreferrer">
+                            Ver perfil de LinkedIn
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {testimonials.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">No hay testimonios configurados</div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {/* Customization Tab */}
+        {activeTab === "personalizacion" && (
+          <>
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-slate-800">Gestión de Personalización</h1>
+              <p className="text-gray-600 mt-2">Administra el contenido de opciones de personalización del curso</p>
+            </div>
+
+            {/* Intro Text */}
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle>Texto Introductorio</CardTitle>
+                <CardDescription>Texto que aparece al inicio de la sección de personalización</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  value={customizationContent.introText}
+                  onChange={(e) => {
+                    const newContent = { ...customizationContent, introText: e.target.value }
+                    setCustomizationContent(newContent)
+                    handleUpdateCustomizationContent(newContent)
+                  }}
+                  rows={3}
+                  placeholder="Nuestro curso se adapta a cada organización..."
+                />
+              </CardContent>
+            </Card>
+
+            {/* Core Modules */}
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle>Módulos Core (Incluidos)</CardTitle>
+                <CardDescription>Contenido fundamental que todos los participantes reciben</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {customizationContent.coreModules.map((module, index) => (
+                    <div key={module.id} className="p-4 border rounded-lg">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="font-medium text-slate-800">{module.name}</div>
+                          {module.description && <div className="text-sm text-gray-600 mt-1">{module.description}</div>}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newName = prompt("Nuevo nombre del módulo:", module.name)
+                            const newDescription = prompt("Nueva descripción:", module.description || "")
+                            if (newName) {
+                              const newModules = [...customizationContent.coreModules]
+                              newModules[index] = { ...module, name: newName, description: newDescription }
+                              const newContent = { ...customizationContent, coreModules: newModules }
+                              setCustomizationContent(newContent)
+                              handleUpdateCustomizationContent(newContent)
+                            }
+                          }}
+                        >
+                          <EditIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const name = prompt("Nombre del nuevo módulo core:")
+                      const description = prompt("Descripción del módulo:")
+                      if (name) {
+                        const newModule = {
+                          id: Date.now().toString(),
+                          name,
+                          description: description || undefined,
+                        }
+                        const newContent = {
+                          ...customizationContent,
+                          coreModules: [...customizationContent.coreModules, newModule],
+                        }
+                        setCustomizationContent(newContent)
+                        handleUpdateCustomizationContent(newContent)
+                      }
+                    }}
+                  >
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Agregar Módulo Core
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Customizable Modules */}
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle>Módulos Personalizables</CardTitle>
+                <CardDescription>Módulos que se pueden seleccionar según las necesidades</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {customizationContent.customizableModules.map((module, index) => (
+                    <div key={module.id} className="p-4 border rounded-lg">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="font-medium text-slate-800">{module.name}</div>
+                          {module.description && <div className="text-sm text-gray-600 mt-1">{module.description}</div>}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newName = prompt("Nuevo nombre del módulo:", module.name)
+                            const newDescription = prompt("Nueva descripción:", module.description || "")
+                            if (newName) {
+                              const newModules = [...customizationContent.customizableModules]
+                              newModules[index] = { ...module, name: newName, description: newDescription }
+                              const newContent = { ...customizationContent, customizableModules: newModules }
+                              setCustomizationContent(newContent)
+                              handleUpdateCustomizationContent(newContent)
+                            }
+                          }}
+                        >
+                          <EditIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const name = prompt("Nombre del nuevo módulo personalizable:")
+                      const description = prompt("Descripción del módulo:")
+                      if (name) {
+                        const newModule = {
+                          id: Date.now().toString(),
+                          name,
+                          description: description || undefined,
+                        }
+                        const newContent = {
+                          ...customizationContent,
+                          customizableModules: [...customizationContent.customizableModules, newModule],
+                        }
+                        setCustomizationContent(newContent)
+                        handleUpdateCustomizationContent(newContent)
+                      }
+                    }}
+                  >
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Agregar Módulo Personalizable
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Additional Options */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Opciones Adicionales</CardTitle>
+                <CardDescription>Servicios premium y opciones extra</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {customizationContent.additionalOptions.map((option, index) => (
+                    <div key={option.id} className="p-4 border rounded-lg">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="font-medium text-slate-800">{option.name}</div>
+                          {option.description && <div className="text-sm text-gray-600 mt-1">{option.description}</div>}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newName = prompt("Nuevo nombre de la opción:", option.name)
+                            const newDescription = prompt("Nueva descripción:", option.description || "")
+                            if (newName) {
+                              const newOptions = [...customizationContent.additionalOptions]
+                              newOptions[index] = { ...option, name: newName, description: newDescription }
+                              const newContent = { ...customizationContent, additionalOptions: newOptions }
+                              setCustomizationContent(newContent)
+                              handleUpdateCustomizationContent(newContent)
+                            }
+                          }}
+                        >
+                          <EditIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const name = prompt("Nombre de la nueva opción adicional:")
+                      const description = prompt("Descripción de la opción:")
+                      if (name) {
+                        const newOption = {
+                          id: Date.now().toString(),
+                          name,
+                          description: description || undefined,
+                        }
+                        const newContent = {
+                          ...customizationContent,
+                          additionalOptions: [...customizationContent.additionalOptions, newOption],
+                        }
+                        setCustomizationContent(newContent)
+                        handleUpdateCustomizationContent(newContent)
+                      }
+                    }}
+                  >
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Agregar Opción Adicional
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
     </div>
   )
