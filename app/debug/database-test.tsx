@@ -248,7 +248,7 @@ export default function DatabaseTest() {
         const defaultContent = {
           intro_text: "Texto actualizado de prueba",
           core_modules: [{ id: "test", name: "Test Module", description: "Test Description" }],
-          customizableModules: [],
+          customizable_modules: [],
           additional_options: [],
         }
 
