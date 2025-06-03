@@ -224,7 +224,7 @@ export default function DatabaseTest() {
         // Create session
         const newSession = {
           password: "test-session",
-          startTime: new Date().toISOString(),
+          start_time: new Date().toISOString(),
           sections_visited: ["home", "testimonials"],
           is_active: true,
         }
@@ -247,7 +247,7 @@ export default function DatabaseTest() {
         // Update customization content
         const defaultContent = {
           intro_text: "Texto actualizado de prueba",
-          coreModules: [{ id: "test", name: "Test Module", description: "Test Description" }],
+          core_modules: [{ id: "test", name: "Test Module", description: "Test Description" }],
           customizableModules: [],
           additional_options: [],
         }
