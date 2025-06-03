@@ -189,7 +189,7 @@ export default function DatabaseTest() {
           const updatedStats = await updateTestimonialStats({
             totalProfessionals: stats.totalProfessionals + 1,
             satisfactionRate: stats.satisfactionRate,
-            productivityIncrease: stats.productivityIncrease,
+            productivity_increase: stats.productivity_increase,
             intro_text: stats.intro_text,
           })
           addResult(
@@ -201,7 +201,7 @@ export default function DatabaseTest() {
           const newStats = await updateTestimonialStats({
             totalProfessionals: 501,
             satisfactionRate: 95,
-            productivityIncrease: 40,
+            productivity_increase: 40,
             intro_text:
               "Más de 500 personas han pasado por nuestros cursos. Aquí puedes leer lo que dicen quienes ya transformaron su forma de trabajar gracias a la IA generativa.",
           })
