@@ -134,7 +134,7 @@ export default function DatabaseTest() {
         // Create video demo
         const newVideoDemo = {
           title: `Test Video ${Date.now()}`,
-          youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+          youtube_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
           description: "Test Description",
         }
         const createdVideoDemo = await createVideoDemo(newVideoDemo)
