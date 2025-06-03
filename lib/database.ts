@@ -72,7 +72,7 @@ export async function getReferences(): Promise<Reference[]> {
     console.warn("Supabase no disponible")
     return []
   }
-  const { data, error } = await supabase.from("references").select("*").order("created_at", { ascending: false })
+  const { data, error } = await supabase.from("references_text").select("*").order("created_at", { ascending: false })
 
   if (error) {
     console.error("Error fetching references:", error)
