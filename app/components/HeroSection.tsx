@@ -2,75 +2,94 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { PlayCircleIcon, UsersIcon, MessageSquareIcon, SettingsIcon, CheckCircleIcon } from "lucide-react"
+import {
+  PlayCircleIcon,
+  UsersIcon,
+  MessageSquareIcon,
+  SettingsIcon,
+  CheckCircleIcon,
+  AlertCircleIcon,
+} from "lucide-react"
 import { useState, useEffect } from "react"
+import { getTestimonialStats, getPasswords } from "@/lib/database"
+import type { TestimonialStats } from "@/lib/supabase"
 
 export default function HeroSection() {
   const [salesEmail, setSalesEmail] = useState("ventas@thepromptacademy.com")
-  const [stats, setStats] = useState({ totalProfessionals: 500 })
-  const [isClient, setIsClient] = useState(false)
+  const [stats, setStats] = useState<TestimonialStats | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    setIsClient(true)
-  }, [])
-
-  useEffect(() => {
-    if (!isClient) return
-
-    const loadData = () => {
+    const loadData = async () => {
       try {
-        const defaultSalesEmail = "ventas@thepromptacademy.com"
+        setLoading(true)
+        setError(null)
+
+        const [statsData, passwordsData] = await Promise.all([getTestimonialStats(), getPasswords()])
+
+        setStats(statsData)
+
+        // Get sales email from current password
         const currentPassword = localStorage.getItem("tpa-current-password")
-        const savedPasswords = localStorage.getItem("tpa-admin-passwords")
-
-        if (currentPassword && savedPasswords) {
-          try {
-            const passwords = JSON.parse(savedPasswords)
-            const activePassword = passwords.find((p: any) => p.password === currentPassword)
-            if (activePassword && activePassword.salesEmail) {
-              setSalesEmail(activePassword.salesEmail)
-            }
-          } catch (error) {
-            console.error("Error parsing passwords:", error)
-            setSalesEmail(defaultSalesEmail)
+        if (currentPassword && passwordsData) {
+          const activePassword = passwordsData.find((p) => p.password === currentPassword)
+          if (activePassword && activePassword.sales_email) {
+            setSalesEmail(activePassword.sales_email)
           }
-        } else {
-          setSalesEmail(defaultSalesEmail)
         }
+      } catch (err) {
+        console.error("Error loading hero data:", err)
+        setError("Error al cargar los datos")
 
-        // Cargar estadísticas
-        const savedStats = localStorage.getItem("tpa-admin-testimonial-stats")
-        if (savedStats) {
-          const parsedStats = JSON.parse(savedStats)
-          setStats({ totalProfessionals: parsedStats.totalProfessionals })
+        // Fallback to localStorage
+        try {
+          const savedStats = localStorage.getItem("tpa-admin-testimonial-stats")
+          const savedPasswords = localStorage.getItem("tpa-admin-passwords")
+
+          if (savedStats) {
+            setStats(JSON.parse(savedStats))
+          } else {
+            // Default stats
+            setStats({
+              id: "1",
+              total_professionals: 500,
+              satisfaction_rate: 95,
+              productivity_increase: 40,
+              intro_text: "",
+              updated_at: new Date().toISOString(),
+            })
+          }
+
+          // Handle sales email fallback
+          const currentPassword = localStorage.getItem("tpa-current-password")
+          if (currentPassword && savedPasswords) {
+            try {
+              const passwords = JSON.parse(savedPasswords)
+              const activePassword = passwords.find((p: any) => p.password === currentPassword)
+              if (activePassword && activePassword.salesEmail) {
+                setSalesEmail(activePassword.salesEmail)
+              }
+            } catch (error) {
+              console.error("Error parsing passwords:", error)
+            }
+          }
+        } catch (fallbackError) {
+          console.error("Fallback also failed:", fallbackError)
         }
-      } catch (error) {
-        console.error("Error loading hero data:", error)
+      } finally {
+        setLoading(false)
       }
     }
 
     loadData()
+  }, [])
 
-    // Escuchar cambios en las estadísticas
-    const handleStatsUpdate = () => {
-      const updatedStats = localStorage.getItem("tpa-admin-testimonial-stats")
-      if (updatedStats) {
-        const parsedStats = JSON.parse(updatedStats)
-        setStats({ totalProfessionals: parsedStats.totalProfessionals })
-      }
-    }
-
-    window.addEventListener("testimonialStatsUpdated", handleStatsUpdate)
-
-    return () => {
-      window.removeEventListener("testimonialStatsUpdated", handleStatsUpdate)
-    }
-  }, [isClient])
-
-  if (!isClient) {
+  if (loading) {
     return (
       <div className="py-16 text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto"></div>
+        <p className="text-gray-600 mt-4">Cargando...</p>
       </div>
     )
   }
@@ -88,6 +107,14 @@ export default function HeroSection() {
             Has accedido al contenido exclusivo de The Prompt Academy. Aquí encontrarás toda la información necesaria
             para evaluar nuestro programa de capacitación en Inteligencia Artificial Generativa.
           </p>
+          {error && (
+            <div className="mt-6 p-3 bg-orange-50 border border-orange-200 rounded-lg max-w-md mx-auto">
+              <div className="flex items-center gap-2 text-orange-700">
+                <AlertCircleIcon className="h-4 w-4" />
+                <span className="text-sm">Algunos datos pueden estar desactualizados</span>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -156,8 +183,8 @@ export default function HeroSection() {
                   <div>
                     <h3 className="text-xl font-semibold text-slate-800 mb-2">Testimonios de Estudiantes</h3>
                     <p className="text-gray-600 mb-3">
-                      Lee las experiencias de más de {stats.totalProfessionals} profesionales que han transformado su
-                      forma de trabajar con IA generativa.
+                      Lee las experiencias de más de {stats?.total_professionals || 500} profesionales que han
+                      transformado su forma de trabajar con IA generativa.
                     </p>
                     <ul className="text-sm text-gray-500 space-y-1">
                       <li>• Casos de éxito documentados</li>
@@ -206,7 +233,8 @@ export default function HeroSection() {
                   </div>
                   <h4 className="font-semibold text-slate-800 mb-2">Metodología Probada</h4>
                   <p className="text-gray-600 text-sm">
-                    Más de {stats.totalProfessionals} profesionales capacitados con resultados medibles en productividad
+                    Más de {stats?.total_professionals || 500} profesionales capacitados con resultados medibles en
+                    productividad
                   </p>
                 </div>
 

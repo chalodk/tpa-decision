@@ -2,134 +2,95 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { QuoteIcon, StarIcon } from "lucide-react"
-
-interface Testimonial {
-  id: string
-  text: string
-  name?: string
-  position?: string
-  company?: string
-  avatar?: string
-  linkedinUrl?: string
-  createdAt: string
-}
-
-interface TestimonialStats {
-  totalProfessionals: number
-  satisfactionRate: number
-  productivityIncrease: number
-  introText: string
-}
+import { QuoteIcon, StarIcon, AlertCircleIcon } from "lucide-react"
+import { getTestimonials, getTestimonialStats } from "@/lib/database"
+import type { Testimonial, TestimonialStats } from "@/lib/supabase"
 
 export default function TestimonialsSection() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([])
-  const [stats, setStats] = useState<TestimonialStats>({
-    totalProfessionals: 500,
-    satisfactionRate: 95,
-    productivityIncrease: 40,
-    introText:
-      "Más de 500 personas han pasado por nuestros cursos. Aquí puedes leer lo que dicen quienes ya transformaron su forma de trabajar gracias a la IA generativa.",
-  })
+  const [stats, setStats] = useState<TestimonialStats | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(0)
   const testimonialsPerPage = 3
 
   useEffect(() => {
-    const defaultTestimonials = [
-      {
-        id: "1",
-        text: "El curso de The Prompt Academy transformó completamente nuestra forma de trabajar. En 3 meses implementamos soluciones de IA que aumentaron nuestra productividad en un 40%. El ROI fue evidente desde la primera semana.",
-        name: "Roberto Silva",
-        position: "Gerente de Operaciones",
-        company: "Empresa Retail Líder",
-        linkedinUrl: "https://linkedin.com/in/roberto-silva",
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: "2",
-        text: "La metodología es excelente y muy práctica. Nuestro equipo pasó de no conocer nada sobre IA generativa a implementar chatbots y automatizaciones en solo 2 semanas. Los instructores son expertos reales.",
-        name: "Patricia López",
-        position: "Directora de Marketing",
-        company: "Fintech Innovadora",
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: "3",
-        text: "Superó nuestras expectativas completamente. No solo aprendimos sobre IA, sino que desarrollamos una estrategia integral para nuestra transformación digital. El acompañamiento post-curso fue fundamental.",
-        name: "Miguel Torres",
-        position: "CTO",
-        company: "Startup Tecnológica",
-        linkedinUrl: "https://linkedin.com/in/miguel-torres-cto",
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: "4",
-        text: "La inversión se recuperó en menos de 6 meses. Ahora tenemos un equipo capacitado que puede implementar soluciones de IA de forma autónoma. Recomiendo totalmente The Prompt Academy.",
-        name: "Carmen Ruiz",
-        position: "Directora de Innovación",
-        company: "Corporación Multinacional",
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: "5",
-        text: "El contenido es actualizado, relevante y aplicable inmediatamente. Nuestros procesos de atención al cliente mejoraron significativamente gracias a las técnicas aprendidas.",
-        name: "Diego Fernández",
-        position: "Head of Customer Experience",
-        company: "Empresa de Servicios",
-        linkedinUrl: "https://linkedin.com/in/diego-fernandez-cx",
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: "6",
-        text: "Excelente programa. La combinación de teoría y práctica es perfecta. Nuestro equipo está motivado y aplicando todo lo aprendido en proyectos reales con resultados medibles.",
-        name: "Andrea Morales",
-        position: "Gerente de Transformación",
-        company: "Banco Regional",
-        createdAt: new Date().toISOString(),
-      },
-    ]
+    const loadData = async () => {
+      try {
+        setLoading(true)
+        setError(null)
 
-    const defaultStats = {
-      totalProfessionals: 500,
-      satisfactionRate: 95,
-      productivityIncrease: 40,
-      introText:
-        "Más de 500 personas han pasado por nuestros cursos. Aquí puedes leer lo que dicen quienes ya transformaron su forma de trabajar gracias a la IA generativa.",
-    }
+        const [testimonialsData, statsData] = await Promise.all([getTestimonials(), getTestimonialStats()])
 
-    const loadData = () => {
-      // Cargar testimonios
-      const savedTestimonials = localStorage.getItem("tpa-admin-testimonials")
-      if (savedTestimonials) {
-        setTestimonials(JSON.parse(savedTestimonials))
-      } else if (typeof window !== "undefined") {
-        localStorage.setItem("tpa-admin-testimonials", JSON.stringify(defaultTestimonials))
-        setTestimonials(defaultTestimonials)
-      }
+        setTestimonials(testimonialsData)
+        setStats(statsData)
+      } catch (err) {
+        console.error("Error loading testimonials:", err)
+        setError("Error al cargar los testimonios")
 
-      // Cargar estadísticas
-      const savedStats = localStorage.getItem("tpa-admin-testimonial-stats")
-      if (savedStats) {
-        setStats(JSON.parse(savedStats))
-      } else if (typeof window !== "undefined") {
-        localStorage.setItem("tpa-admin-testimonial-stats", JSON.stringify(defaultStats))
-        setStats(defaultStats)
+        // Fallback to localStorage if Supabase fails
+        try {
+          const savedTestimonials = localStorage.getItem("tpa-admin-testimonials")
+          const savedStats = localStorage.getItem("tpa-admin-testimonial-stats")
+
+          if (savedTestimonials) {
+            setTestimonials(JSON.parse(savedTestimonials))
+          } else {
+            // Default testimonials
+            const defaultTestimonials = [
+              {
+                id: "1",
+                text: "El curso de The Prompt Academy transformó completamente nuestra forma de trabajar. En 3 meses implementamos soluciones de IA que aumentaron nuestra productividad en un 40%. El ROI fue evidente desde la primera semana.",
+                name: "Roberto Silva",
+                position: "Gerente de Operaciones",
+                company: "Empresa Retail Líder",
+                linkedin_url: "https://linkedin.com/in/roberto-silva",
+                created_at: new Date().toISOString(),
+              },
+              {
+                id: "2",
+                text: "La metodología es excelente y muy práctica. Nuestro equipo pasó de no conocer nada sobre IA generativa a implementar chatbots y automatizaciones en solo 2 semanas. Los instructores son expertos reales.",
+                name: "Patricia López",
+                position: "Directora de Marketing",
+                company: "Fintech Innovadora",
+                created_at: new Date().toISOString(),
+              },
+              {
+                id: "3",
+                text: "Superó nuestras expectativas completamente. No solo aprendimos sobre IA, sino que desarrollamos una estrategia integral para nuestra transformación digital. El acompañamiento post-curso fue fundamental.",
+                name: "Miguel Torres",
+                position: "CTO",
+                company: "Startup Tecnológica",
+                linkedin_url: "https://linkedin.com/in/miguel-torres-cto",
+                created_at: new Date().toISOString(),
+              },
+            ]
+            setTestimonials(defaultTestimonials)
+          }
+
+          if (savedStats) {
+            setStats(JSON.parse(savedStats))
+          } else {
+            // Default stats
+            setStats({
+              id: "1",
+              total_professionals: 500,
+              satisfaction_rate: 95,
+              productivity_increase: 40,
+              intro_text:
+                "Más de 500 personas han pasado por nuestros cursos. Aquí puedes leer lo que dicen quienes ya transformaron su forma de trabajar gracias a la IA generativa.",
+              updated_at: new Date().toISOString(),
+            })
+          }
+        } catch (fallbackError) {
+          console.error("Fallback also failed:", fallbackError)
+        }
+      } finally {
+        setLoading(false)
       }
     }
 
     loadData()
-
-    // Escuchar cambios
-    const handleTestimonialsUpdate = () => loadData()
-    const handleStatsUpdate = () => loadData()
-
-    window.addEventListener("testimonialsUpdated", handleTestimonialsUpdate)
-    window.addEventListener("testimonialStatsUpdated", handleStatsUpdate)
-
-    return () => {
-      window.removeEventListener("testimonialsUpdated", handleTestimonialsUpdate)
-      window.removeEventListener("testimonialStatsUpdated", handleStatsUpdate)
-    }
   }, [])
 
   // Calcular testimonios para la página actual
@@ -147,6 +108,34 @@ export default function TestimonialsSection() {
 
   const goToPage = (page: number) => {
     setCurrentPage(page)
+  }
+
+  if (loading) {
+    return (
+      <section className="py-16">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Cargando testimonios...</p>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (error && testimonials.length === 0) {
+    return (
+      <section className="py-16">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="text-center">
+            <AlertCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-slate-800 mb-4">Testimonios de estudiantes</h1>
+            <p className="text-lg text-red-600 mb-4">{error}</p>
+            <p className="text-gray-600">Por favor, intenta recargar la página.</p>
+          </div>
+        </div>
+      </section>
+    )
   }
 
   if (testimonials.length === 0) {
@@ -167,8 +156,43 @@ export default function TestimonialsSection() {
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="text-center mb-12">
           <h1 className="text-3xl font-bold text-slate-800 mb-4">Testimonios de estudiantes</h1>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">{stats.introText}</p>
+          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+            {stats?.intro_text ||
+              "Conoce las experiencias de quienes ya transformaron su forma de trabajar gracias a la IA generativa."}
+          </p>
+          {error && (
+            <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg max-w-md mx-auto">
+              <div className="flex items-center gap-2 text-orange-700">
+                <AlertCircleIcon className="h-4 w-4" />
+                <span className="text-sm">Mostrando datos de respaldo</span>
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* Estadísticas */}
+        {stats && (
+          <div className="grid md:grid-cols-3 gap-6 mb-12">
+            <Card className="text-center p-6 bg-orange-50 border-orange-200">
+              <CardContent className="p-0">
+                <div className="text-4xl font-bold text-orange-600 mb-2">{stats.total_professionals}+</div>
+                <div className="text-gray-600 font-medium">Profesionales capacitados</div>
+              </CardContent>
+            </Card>
+            <Card className="text-center p-6 bg-green-50 border-green-200">
+              <CardContent className="p-0">
+                <div className="text-4xl font-bold text-green-600 mb-2">{stats.satisfaction_rate}%</div>
+                <div className="text-gray-600 font-medium">Satisfacción promedio</div>
+              </CardContent>
+            </Card>
+            <Card className="text-center p-6 bg-blue-50 border-blue-200">
+              <CardContent className="p-0">
+                <div className="text-4xl font-bold text-blue-600 mb-2">{stats.productivity_increase}%</div>
+                <div className="text-gray-600 font-medium">Aumento en productividad</div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Grid de testimonios */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
@@ -193,9 +217,9 @@ export default function TestimonialsSection() {
                       <div className="text-orange-600 font-medium text-sm">{testimonial.position}</div>
                     )}
                     {testimonial.company && <div className="text-gray-600 text-sm">{testimonial.company}</div>}
-                    {testimonial.linkedinUrl && (
+                    {testimonial.linkedin_url && (
                       <a
-                        href={testimonial.linkedinUrl}
+                        href={testimonial.linkedin_url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm mt-2"

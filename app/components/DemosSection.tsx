@@ -2,14 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-
-interface VideoDemo {
-  id: string
-  title: string
-  youtubeUrl: string
-  description?: string
-  createdAt: string
-}
+import { AlertCircleIcon } from "lucide-react"
+import { getVideoDemos } from "@/lib/database"
+import type { VideoDemo } from "@/lib/supabase"
 
 const extractVideoId = (url: string) => {
   const match = url.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/)
@@ -18,74 +13,90 @@ const extractVideoId = (url: string) => {
 
 export default function DemosSection() {
   const [videoDemos, setVideoDemos] = useState<VideoDemo[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const defaultVideoDemos = [
-      {
-        id: "1",
-        title: "Fundamentos de IA Generativa",
-        youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        description: "Introducción completa a los conceptos básicos y aplicaciones prácticas",
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: "2",
-        title: "Técnicas Avanzadas de Prompting",
-        youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        description: "Metodologías para crear prompts efectivos y obtener mejores resultados",
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: "3",
-        title: "Aplicaciones Empresariales",
-        youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        description: "Casos de uso reales en diferentes sectores e industrias",
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: "4",
-        title: "Workshop: Automatización con IA",
-        youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        description: "Sesión práctica de implementación de soluciones automatizadas",
-        createdAt: new Date().toISOString(),
-      },
-    ]
+    const loadVideoDemos = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const data = await getVideoDemos()
+        setVideoDemos(data)
+      } catch (err) {
+        console.error("Error loading video demos:", err)
+        setError("Error al cargar los videos demo")
 
-    const loadVideoDemos = () => {
-      const savedVideoDemos = localStorage.getItem("tpa-admin-video-demos")
-      if (savedVideoDemos) {
-        setVideoDemos(JSON.parse(savedVideoDemos))
-      } else if (typeof window !== "undefined") {
-        // Si no hay videos guardados, usar los predeterminados
-        localStorage.setItem("tpa-admin-video-demos", JSON.stringify(defaultVideoDemos))
-        setVideoDemos(defaultVideoDemos)
+        // Fallback to localStorage if Supabase fails
+        try {
+          const savedVideoDemos = localStorage.getItem("tpa-admin-video-demos")
+          if (savedVideoDemos) {
+            setVideoDemos(JSON.parse(savedVideoDemos))
+          } else {
+            // Default video demos if nothing is available
+            const defaultVideoDemos = [
+              {
+                id: "1",
+                title: "Fundamentos de IA Generativa",
+                youtube_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                description: "Introducción completa a los conceptos básicos y aplicaciones prácticas",
+                created_at: new Date().toISOString(),
+              },
+              {
+                id: "2",
+                title: "Técnicas Avanzadas de Prompting",
+                youtube_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                description: "Metodologías para crear prompts efectivos y obtener mejores resultados",
+                created_at: new Date().toISOString(),
+              },
+              {
+                id: "3",
+                title: "Aplicaciones Empresariales",
+                youtube_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                description: "Casos de uso reales en diferentes sectores e industrias",
+                created_at: new Date().toISOString(),
+              },
+            ]
+            setVideoDemos(defaultVideoDemos)
+          }
+        } catch (fallbackError) {
+          console.error("Fallback also failed:", fallbackError)
+        }
+      } finally {
+        setLoading(false)
       }
     }
 
-    // Load initial data
     loadVideoDemos()
-
-    // Listen for storage changes
-    const handleStorageChange = (e) => {
-      if (e.key === "tpa-admin-video-demos") {
-        loadVideoDemos()
-      }
-    }
-
-    window.addEventListener("storage", handleStorageChange)
-
-    // Also listen for custom events (for same-tab updates)
-    const handleCustomUpdate = () => {
-      loadVideoDemos()
-    }
-
-    window.addEventListener("videosUpdated", handleCustomUpdate)
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange)
-      window.removeEventListener("videosUpdated", handleCustomUpdate)
-    }
   }, [])
+
+  if (loading) {
+    return (
+      <section className="py-16">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Cargando videos demo...</p>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (error && videoDemos.length === 0) {
+    return (
+      <section className="py-16">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="text-center">
+            <AlertCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-slate-800 mb-4">Mira demos del curso</h1>
+            <p className="text-lg text-red-600 mb-4">{error}</p>
+            <p className="text-gray-600">Por favor, intenta recargar la página.</p>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section className="py-16">
@@ -96,12 +107,20 @@ export default function DemosSection() {
             Mira clases reales de nuestro curso. Conoce el estilo, profundidad y valor práctico que ofrecemos en The
             Prompt Academy.
           </p>
+          {error && (
+            <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg max-w-md mx-auto">
+              <div className="flex items-center gap-2 text-orange-700">
+                <AlertCircleIcon className="h-4 w-4" />
+                <span className="text-sm">Mostrando datos de respaldo</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {videoDemos.length > 0 ? (
           <div className="grid md:grid-cols-2 gap-6">
             {videoDemos.map((video) => {
-              const videoId = extractVideoId(video.youtubeUrl)
+              const videoId = extractVideoId(video.youtube_url)
               return (
                 <Card key={video.id} className="overflow-hidden shadow-sm border border-gray-200">
                   <div className="aspect-video">

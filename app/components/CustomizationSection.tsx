@@ -2,172 +2,115 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CheckCircleIcon } from "lucide-react"
+import { CheckCircleIcon, AlertCircleIcon } from "lucide-react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useState, useEffect } from "react"
+import { getCustomizationContent, getPasswords } from "@/lib/database"
 
 interface CustomizationContent {
-  introText: string
-  coreModules: Array<{ id: string; name: string; description?: string }>
-  customizableModules: Array<{ id: string; name: string; description?: string }>
-  additionalOptions: Array<{ id: string; name: string; description?: string }>
+  intro_text: string
+  core_modules: Array<{ id: string; name: string; description?: string }>
+  customizable_modules: Array<{ id: string; name: string; description?: string }>
+  additional_options: Array<{ id: string; name: string; description?: string }>
 }
 
 export default function CustomizationSection() {
-  const [content, setContent] = useState<CustomizationContent>({
-    introText:
-      "Nuestro curso se adapta a cada organización. Estas son las opciones de personalización disponibles al contratarlo.",
-    coreModules: [],
-    customizableModules: [],
-    additionalOptions: [],
-  })
+  const [content, setContent] = useState<CustomizationContent | null>(null)
   const [salesEmail, setSalesEmail] = useState("ventas@thepromptacademy.com")
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const defaultContent = {
-      introText:
-        "Nuestro curso se adapta a cada organización. Estas son las opciones de personalización disponibles al contratarlo.",
-      coreModules: [
-        {
-          id: "1",
-          name: "Fundamentos de IA Generativa y conceptos clave",
-          description: "Base teórica esencial para entender la tecnología",
-        },
-        {
-          id: "2",
-          name: "Técnicas de Prompting efectivo y optimización",
-          description: "Metodologías para crear prompts que generen mejores resultados",
-        },
-        {
-          id: "3",
-          name: "Aplicaciones en productividad individual y equipos",
-          description: "Casos prácticos para mejorar la eficiencia personal y grupal",
-        },
-        {
-          id: "4",
-          name: "Herramientas principales: ChatGPT, Claude, Gemini",
-          description: "Dominio de las plataformas más utilizadas en el mercado",
-        },
-        {
-          id: "5",
-          name: "Ética y mejores prácticas en IA empresarial",
-          description: "Uso responsable y consideraciones éticas en entornos corporativos",
-        },
-      ],
-      customizableModules: [
-        {
-          id: "1",
-          name: "Casos de uso por sector (marketing, legal, educación, finanzas)",
-          description: "Aplicaciones específicas según la industria del cliente",
-        },
-        {
-          id: "2",
-          name: "Automatización con herramientas no-code (Zapier, Make)",
-          description: "Integración de IA con flujos de trabajo automatizados",
-        },
-        {
-          id: "3",
-          name: "Integraciones con Microsoft 365 y Google Workspace",
-          description: "Optimización de herramientas de productividad empresarial",
-        },
-        {
-          id: "4",
-          name: "Creación de chatbots y asistentes virtuales",
-          description: "Desarrollo de soluciones conversacionales personalizadas",
-        },
-        {
-          id: "5",
-          name: "Análisis de datos y generación de reportes",
-          description: "Uso de IA para insights y visualización de información",
-        },
-        {
-          id: "6",
-          name: "Gestión del cambio y adopción organizacional",
-          description: "Estrategias para implementar IA en equipos de trabajo",
-        },
-      ],
-      additionalOptions: [
-        {
-          id: "1",
-          name: "Talleres sincrónicos en vivo con expertos",
-          description: "Sesiones interactivas con especialistas del sector",
-        },
-        {
-          id: "2",
-          name: "Branding institucional en todos los materiales",
-          description: "Personalización visual con la identidad de la empresa",
-        },
-        {
-          id: "3",
-          name: "Diagnóstico inicial y plan de implementación",
-          description: "Evaluación previa y roadmap personalizado",
-        },
-        {
-          id: "4",
-          name: "Sesiones de coaching 1:1 personalizadas",
-          description: "Acompañamiento individual para casos específicos",
-        },
-        {
-          id: "5",
-          name: "Certificación oficial de participación",
-          description: "Documento formal que acredita la capacitación",
-        },
-        {
-          id: "6",
-          name: "Soporte técnico extendido (3-6 meses)",
-          description: "Asistencia continua post-capacitación",
-        },
-        {
-          id: "7",
-          name: "Acceso a comunidad exclusiva de alumni",
-          description: "Red de contactos y intercambio de experiencias",
-        },
-        {
-          id: "8",
-          name: "Actualizaciones de contenido por 12 meses",
-          description: "Acceso a nuevos materiales y tendencias",
-        },
-      ],
-    }
+    const loadData = async () => {
+      try {
+        setLoading(true)
+        setError(null)
 
-    const loadContent = () => {
-      const savedContent = localStorage.getItem("tpa-admin-customization-content")
-      if (savedContent) {
-        setContent(JSON.parse(savedContent))
-      } else if (typeof window !== "undefined") {
-        localStorage.setItem("tpa-admin-customization-content", JSON.stringify(defaultContent))
-        setContent(defaultContent)
-      }
-    }
+        const [customizationData, passwordsData] = await Promise.all([getCustomizationContent(), getPasswords()])
 
-    const loadSalesEmail = () => {
-      const currentPassword = localStorage.getItem("tpa-current-password")
-      const savedPasswords = localStorage.getItem("tpa-admin-passwords")
+        setContent(customizationData)
 
-      if (currentPassword && savedPasswords) {
-        try {
-          const passwords = JSON.parse(savedPasswords)
-          const activePassword = passwords.find((p) => p.password === currentPassword)
-          if (activePassword && activePassword.salesEmail) {
-            setSalesEmail(activePassword.salesEmail)
+        // Get sales email from current password
+        const currentPassword = localStorage.getItem("tpa-current-password")
+        if (currentPassword && passwordsData) {
+          const activePassword = passwordsData.find((p) => p.password === currentPassword)
+          if (activePassword && activePassword.sales_email) {
+            setSalesEmail(activePassword.sales_email)
           }
-        } catch (error) {
-          console.error("Error parsing passwords:", error)
-          setSalesEmail("ventas@thepromptacademy.com")
         }
+      } catch (err) {
+        console.error("Error loading customization content:", err)
+        setError("Error al cargar el contenido de personalización")
+
+        // Fallback to localStorage if Supabase fails
+        try {
+          const savedContent = localStorage.getItem("tpa-admin-customization-content")
+          const savedPasswords = localStorage.getItem("tpa-admin-passwords")
+
+          if (savedContent) {
+            const parsedContent = JSON.parse(savedContent)
+            setContent({
+              intro_text: parsedContent.introText || parsedContent.intro_text,
+              core_modules: parsedContent.coreModules || parsedContent.core_modules || [],
+              customizable_modules: parsedContent.customizableModules || parsedContent.customizable_modules || [],
+              additional_options: parsedContent.additionalOptions || parsedContent.additional_options || [],
+            })
+          } else {
+            // Default content
+            setContent({
+              intro_text:
+                "Nuestro curso se adapta a cada organización. Estas son las opciones de personalización disponibles al contratarlo.",
+              core_modules: [
+                {
+                  id: "1",
+                  name: "Fundamentos de IA Generativa y conceptos clave",
+                  description: "Base teórica esencial para entender la tecnología",
+                },
+                {
+                  id: "2",
+                  name: "Técnicas de Prompting efectivo y optimización",
+                  description: "Metodologías para crear prompts que generen mejores resultados",
+                },
+              ],
+              customizable_modules: [
+                {
+                  id: "1",
+                  name: "Casos de uso por sector (marketing, legal, educación, finanzas)",
+                  description: "Aplicaciones específicas según la industria del cliente",
+                },
+              ],
+              additional_options: [
+                {
+                  id: "1",
+                  name: "Talleres sincrónicos en vivo con expertos",
+                  description: "Sesiones interactivas con especialistas del sector",
+                },
+              ],
+            })
+          }
+
+          // Handle sales email fallback
+          const currentPassword = localStorage.getItem("tpa-current-password")
+          if (currentPassword && savedPasswords) {
+            try {
+              const passwords = JSON.parse(savedPasswords)
+              const activePassword = passwords.find((p: any) => p.password === currentPassword)
+              if (activePassword && activePassword.salesEmail) {
+                setSalesEmail(activePassword.salesEmail)
+              }
+            } catch (error) {
+              console.error("Error parsing passwords:", error)
+            }
+          }
+        } catch (fallbackError) {
+          console.error("Fallback also failed:", fallbackError)
+        }
+      } finally {
+        setLoading(false)
       }
     }
 
-    loadContent()
-    loadSalesEmail()
-
-    // Escuchar cambios
-    const handleContentUpdate = () => loadContent()
-    window.addEventListener("customizationUpdated", handleContentUpdate)
-
-    return () => {
-      window.removeEventListener("customizationUpdated", handleContentUpdate)
-    }
+    loadData()
   }, [])
 
   const handleQuoteRequest = () => {
@@ -226,12 +169,61 @@ Saludos cordiales`)
     window.open(`mailto:${salesEmail}?subject=${subject}&body=${body}`)
   }
 
+  if (loading) {
+    return (
+      <section className="py-16 bg-gray-50">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Cargando opciones de personalización...</p>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (error && !content) {
+    return (
+      <section className="py-16 bg-gray-50">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="text-center">
+            <AlertCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-slate-800 mb-4">Opciones de personalización del curso</h1>
+            <p className="text-lg text-red-600 mb-4">{error}</p>
+            <p className="text-gray-600">Por favor, intenta recargar la página.</p>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (!content) {
+    return (
+      <section className="py-16 bg-gray-50">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-slate-800 mb-4">Opciones de personalización del curso</h1>
+            <p className="text-lg text-gray-600">No hay contenido de personalización disponible en este momento.</p>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className="py-16 bg-gray-50">
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="text-center mb-12">
           <h1 className="text-3xl font-bold text-slate-800 mb-4">Opciones de personalización del curso</h1>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">{content.introText}</p>
+          <p className="text-lg text-gray-600 max-w-3xl mx-auto">{content.intro_text}</p>
+          {error && (
+            <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg max-w-md mx-auto">
+              <div className="flex items-center gap-2 text-orange-700">
+                <AlertCircleIcon className="h-4 w-4" />
+                <span className="text-sm">Mostrando datos de respaldo</span>
+              </div>
+            </div>
+          )}
         </div>
 
         <Accordion type="single" collapsible defaultValue="core" className="space-y-4">
@@ -249,7 +241,7 @@ Saludos cordiales`)
                 Contenido fundamental que todos los participantes reciben, sin importar la personalización:
               </p>
               <ul className="space-y-3">
-                {content.coreModules.map((module) => (
+                {content.core_modules.map((module) => (
                   <li key={module.id} className="flex items-start gap-3">
                     <CheckCircleIcon className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
                     <div>
@@ -276,7 +268,7 @@ Saludos cordiales`)
                 Selecciona los módulos que mejor se adapten a las necesidades de tu organización:
               </p>
               <ul className="space-y-3">
-                {content.customizableModules.map((module) => (
+                {content.customizable_modules.map((module) => (
                   <li key={module.id} className="flex items-start gap-3">
                     <CheckCircleIcon className="h-5 w-5 text-orange-600 mt-0.5 flex-shrink-0" />
                     <div>
@@ -309,7 +301,7 @@ Saludos cordiales`)
                 Servicios premium para maximizar el valor y garantizar la implementación exitosa:
               </p>
               <ul className="space-y-3">
-                {content.additionalOptions.map((option) => (
+                {content.additional_options.map((option) => (
                   <li key={option.id} className="flex items-start gap-3">
                     <CheckCircleIcon className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
                     <div>
