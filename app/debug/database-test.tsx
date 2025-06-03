@@ -249,7 +249,7 @@ export default function DatabaseTest() {
           intro_text: "Texto actualizado de prueba",
           coreModules: [{ id: "test", name: "Test Module", description: "Test Description" }],
           customizableModules: [],
-          additionalOptions: [],
+          additional_options: [],
         }
 
         const updatedContent = await updateCustomizationContent(defaultContent)
