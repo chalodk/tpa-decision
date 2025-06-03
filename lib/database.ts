@@ -100,7 +100,7 @@ export async function updateReference(id: string, updates: Partial<Reference>): 
     console.warn("Supabase no disponible")
     throw new Error("Supabase is not available")
   }
-  const { data, error } = await supabase.from("references").update(updates).eq("id", id).select().single()
+  const { data, error } = await supabase.from("references_text").update(updates).eq("id", id).select().single()
 
   if (error) {
     console.error("Error updating reference:", error)
